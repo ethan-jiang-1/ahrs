@@ -18,15 +18,17 @@ if __name__ == "__main__":
     acc = data[:, 5:8]
     mag = data[:, 11:14]
     num_samples = data.shape[0]
+
     # Estimate Orientations with IMU
     q = np.tile([1., 0., 0., 0.], (num_samples, 1))
     for i in range(num_samples):
         dcm = triad(acc[i], mag[i])
         q[i] = sarabandi(dcm)
+
     # Compute Error
     sqe = abs(q_ref - q).sum(axis=1)**2
     # Plot results
-    plot(q_ref,
+    plot.plot(q_ref,
          q,
          sqe,
          title="TRIAD estimation",

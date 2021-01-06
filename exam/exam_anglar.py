@@ -18,15 +18,17 @@ if __name__ == '__main__':
     q_ref = data[:, 1:5]
     gyr = data[:, 8:11]
     num_samples = data.shape[0]
+
     # Estimate Orientations with IMU
     q = np.tile([1., 0., 0., 0.], (num_samples, 1))
     angular = AngularRate()
     for i in range(1, num_samples):
         q[i] = angular.update(q[i - 1], gyr[i])
+    
     # Compute Error
     sqe = abs(q_ref - q).sum(axis=1)**2
     # Plot results
-    plot(q_ref,
+    plot.plot(q_ref,
          q,
          sqe,
          title="Angular rate integration",
@@ -35,3 +37,5 @@ if __name__ == '__main__':
          ],
          yscales=["linear", "linear", "log"],
          labels=[[], [], ["MSE = {:.3e}".format(sqe.mean())]])
+
+    print("this example demos drift from gyr (if we only count on it)")

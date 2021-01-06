@@ -33,19 +33,19 @@ if __name__ == '__main__':
         q_imu[i] = madgwick.updateIMU(q_imu[i-1], gyr[i], acc[i])
 
     # Estimate Orientations with MARG
-    q_marg = np.tile([1., 0., 0., 0.], (num_samples, 1))
-    madgwick = Madgwick()
+    q_imu5 = np.tile([1., 0., 0., 0.], (num_samples, 1))
+    madgwick = Madgwick(frequency=100, beta=0.5)
     for i in range(1, num_samples):
-        q_marg[i] = madgwick.updateMARG(q_marg[i-1], gyr[i], acc[i], mag[i])
+        q_imu5[i] = madgwick.updateIMU(q_imu5[i - 1], gyr[i], acc[i])
 
     # Compute Error
     sqe_imu = abs(q_ref - q_imu).sum(axis=1)**2
-    sqe_marg = abs(q_ref - q_marg).sum(axis=1)**2
+    sqe_imu5 = abs(q_ref - q_imu5).sum(axis=1)**2
 
     # Plot results
     from ahrs.utils import plot
-    plot.plot(data[:, 1:5], q_imu, q_marg, [sqe_imu, sqe_marg],
+    plot.plot(data[:, 1:5], q_imu, q_imu5, [sqe_imu, sqe_imu5],
         title="Madgwick's algorithm",
-        subtitles=["Reference Quaternions", "Estimated Quaternions (IMU)", "Estimated Quaternions (MARG)", "Squared Errors"],
+        subtitles=["Reference Quaternions", "Estimated Quaternions (IMU)", "Estimated Quaternions (IMU5))", "Squared Errors"],
         yscales=["linear", "linear", "linear", "log"],
-        labels=[[], [], [], ["MSE (IMU) = {:.3e}".format(sqe_imu.mean()), "MSE (MARG) = {:.3e}".format(sqe_marg.mean())]])
+        labels=[[], [], [], ["MSE (IMU) = {:.3e}".format(sqe_imu.mean()), "MSE (IMU5) = {:.3e}".format(sqe_imu5.mean())]])

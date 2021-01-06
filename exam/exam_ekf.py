@@ -5,11 +5,19 @@ from ahrs.common import DEG2RAD
 
 import pandas as pd
 
-from ahrs.filters.madgwick import Madgwick
+from ahrs.filters.ekf import EKF
 
 app_root = os.path.dirname(os.path.dirname(__file__))
 print(app_root)
 
+
+class EkfData(object):
+    def __init__(self, acc, gyr, mag, num_samples):
+        self.num_samples = num_samples
+        self.acc = acc
+        self.gyr = gyr
+        self.mag = mag
+        self.in_rads = True
 
 if __name__ == '__main__':
 
@@ -27,16 +35,24 @@ if __name__ == '__main__':
     print("num_samples", num_samples)
 
     # Estimate Orientations with IMU
+    #q_imu = np.tile([1., 0., 0., 0.], (num_samples, 1))
+    #ei = EkfData(acc, gyr, mag, num_samples)
+    #ekf = EKF(ei, noises=[0.0001, 0.0002, 0.0003])
+    #q_imu = ekf.Q
+    #for i in range(1, num_samples):
+    #    q_imu[i] = madgwick.updateIMU(q_imu[i-1], gyr[i], acc[i])
+
+    # Estimate Orientations with IMU
     q_imu = np.tile([1., 0., 0., 0.], (num_samples, 1))
-    madgwick = Madgwick(frequency=100, beta=0.1)
+    ekf = EKF(frequency=100, beta=0.1)
     for i in range(1, num_samples):
-        q_imu[i] = madgwick.updateIMU(q_imu[i-1], gyr[i], acc[i])
+        q_imu[i] = ekf.update(q_imu[i - 1], gyr[i], acc[i], mag[i])
 
     # Estimate Orientations with MARG
     q_marg = np.tile([1., 0., 0., 0.], (num_samples, 1))
-    madgwick = Madgwick()
-    for i in range(1, num_samples):
-        q_marg[i] = madgwick.updateMARG(q_marg[i-1], gyr[i], acc[i], mag[i])
+    #madgwick = Madgwick()
+    #for i in range(1, num_samples):
+    #    q_marg[i] = madgwick.updateMARG(q_marg[i-1], gyr[i], acc[i], mag[i])
 
     # Compute Error
     sqe_imu = abs(q_ref - q_imu).sum(axis=1)**2
@@ -45,7 +61,7 @@ if __name__ == '__main__':
     # Plot results
     from ahrs.utils import plot
     plot.plot(data[:, 1:5], q_imu, q_marg, [sqe_imu, sqe_marg],
-        title="Madgwick's algorithm",
+        title="ELK's algorithm",
         subtitles=["Reference Quaternions", "Estimated Quaternions (IMU)", "Estimated Quaternions (MARG)", "Squared Errors"],
         yscales=["linear", "linear", "linear", "log"],
         labels=[[], [], [], ["MSE (IMU) = {:.3e}".format(sqe_imu.mean()), "MSE (MARG) = {:.3e}".format(sqe_marg.mean())]])

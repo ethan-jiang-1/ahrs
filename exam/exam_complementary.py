@@ -5,7 +5,7 @@ from ahrs.common import DEG2RAD
 
 import pandas as pd
 
-from ahrs.filters.madgwick import Madgwick
+from ahrs.filters.complementary import Complementary
 
 app_root = os.path.dirname(os.path.dirname(__file__))
 print(app_root)
@@ -28,15 +28,15 @@ if __name__ == '__main__':
 
     # Estimate Orientations with IMU
     q_imu = np.tile([1., 0., 0., 0.], (num_samples, 1))
-    madgwick = Madgwick(frequency=100, beta=0.1)
+    compl = Complementary(frequency=100, beta=0.1)
     for i in range(1, num_samples):
-        q_imu[i] = madgwick.updateIMU(q_imu[i-1], gyr[i], acc[i])
+        q_imu[i] = compl.updateIMU(q_imu[i - 1], gyr[i], acc[i])
 
     # Estimate Orientations with MARG
     q_marg = np.tile([1., 0., 0., 0.], (num_samples, 1))
-    madgwick = Madgwick()
+    compl = Complementary()
     for i in range(1, num_samples):
-        q_marg[i] = madgwick.updateMARG(q_marg[i-1], gyr[i], acc[i], mag[i])
+        q_marg[i] = compl.updateMARG(q_marg[i - 1], gyr[i], acc[i], mag[i])
 
     # Compute Error
     sqe_imu = abs(q_ref - q_imu).sum(axis=1)**2
@@ -45,7 +45,7 @@ if __name__ == '__main__':
     # Plot results
     from ahrs.utils import plot
     plot.plot(data[:, 1:5], q_imu, q_marg, [sqe_imu, sqe_marg],
-        title="Madgwick's algorithm",
+        title="Complementary's algorithm",
         subtitles=["Reference Quaternions", "Estimated Quaternions (IMU)", "Estimated Quaternions (MARG)", "Squared Errors"],
         yscales=["linear", "linear", "linear", "log"],
         labels=[[], [], [], ["MSE (IMU) = {:.3e}".format(sqe_imu.mean()), "MSE (MARG) = {:.3e}".format(sqe_marg.mean())]])
